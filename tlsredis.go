@@ -25,6 +25,8 @@ var (
 
 // Options provides options for configuring connectivity to Redis.
 type Options struct {
+	redis.Options
+
 	// RedisURL is the redis instance's URL in the form
 	// redis://[user:pass@host:port]. Required.
 	RedisURL string
@@ -51,10 +53,6 @@ type Options struct {
 	// TCPKeepAlive enables TCP keepalives on the connection to Redis.
 	// If set to 0, keepalives are disabled.
 	TCPKeepAlive time.Duration
-
-	// The maximum number of socket connections.
-	// Default is 3 connections.
-	PoolSize int
 }
 
 // GetClient gets a client for the given options, returning an existing client
@@ -137,17 +135,14 @@ func GetClient(opts *Options) (*redis.Client, error) {
 		}
 	}
 
-	opt := redis.Options{
-		Dialer:   dialFunc,
-		DB:       db,
-		PoolSize: opts.PoolSize,
-	}
+	opts.Dialer = dialFunc
+	opts.DB = db
 	if u.User != nil {
 		redisPass, _ := u.User.Password()
-		opt.Password = redisPass
+		opts.Password = redisPass
 	}
 
-	rc := redis.NewClient(&opt)
+	rc := redis.NewClient(&opts.Options)
 	rcs[u.Host] = rc
 	return rc, nil
 }
